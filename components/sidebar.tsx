@@ -20,6 +20,19 @@ const menuItems = [
   { name: "Khách hàng", href: "/customers", icon: Users }, // Việc của bạn
   { name: "Nhà cung cấp", href: "/suppliers", icon: Truck }, // Việc của bạn kia
 ];
+import { Bot } from "lucide-react"; // Thêm icon robot cho AI
+
+const menuItems = [
+  { name: "Tổng quan", href: "/", icon: LayoutDashboard },
+  { name: "Đơn hàng AI", href: "/ai-drafts", icon: Bot }, // THÊM MỤC NÀY
+  { name: "Sản phẩm", href: "/products", icon: Package },
+  { name: "Đơn hàng", href: "/orders", icon: ShoppingCart },
+  { name: "Khách hàng", href: "/customers", icon: Users },
+  { name: "Nhà cung cấp", href: "/suppliers", icon: Truck },
+];
+
+
+
 
 export default function Sidebar() {
   const pathname = usePathname();
