@@ -10,14 +10,13 @@ import {
   Settings, 
   LogOut,
   Truck,
-  Bot // Đã thêm Bot vào đây
+  Bot 
 } from "lucide-react";
 import clsx from "clsx";
 
-// CHỈ GIỮ LẠI MỘT KHỐI menuItems DUY NHẤT
 const menuItems = [
   { name: "Tổng quan", href: "/", icon: LayoutDashboard },
-  { name: "Đơn hàng AI", href: "/ai-drafts", icon: Bot }, // Tính năng AI Core mới
+  { name: "Đơn hàng AI", href: "/ai_drafts", icon: Bot }, // Khớp với folder app/ai_drafts
   { name: "Sản phẩm", href: "/products", icon: Package },
   { name: "Đơn hàng", href: "/orders", icon: ShoppingCart },
   { name: "Khách hàng", href: "/customers", icon: Users },
@@ -32,7 +31,7 @@ export default function Sidebar() {
       <div>
         <div className="mb-6 flex items-center gap-2 px-3">
           <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
-            <span className="text-white font-bold">B</span>
+            <span className="text-white font-bold text-lg">B</span>
           </div>
           <span className="text-xl font-bold text-gray-900 tracking-tight">BizFlowa</span>
         </div>

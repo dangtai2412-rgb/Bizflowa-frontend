@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import api from "@/lib/axios"; // Sử dụng cấu hình axios bạn đã có
-import { Check, X, Bot, User, Package, CreditCard } from "lucide-react";
+import api from "@/lib/axios";
+import { Check, X, Bot, User, Package, CreditCard, Mic } from "lucide-react";
 
 interface AIDraftItem {
   product_name: string;
@@ -12,7 +12,7 @@ interface AIDraftItem {
 interface AIDraft {
   draft_id: number;
   recognized_content: string;
-  extracted_json: string; // Backend gửi về chuỗi JSON
+  extracted_json: string; 
   confirmation_status: string;
   created_at: string;
 }
@@ -21,13 +21,11 @@ export default function AIDraftsPage() {
   const [drafts, setDrafts] = useState<AIDraft[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. Lấy danh sách đơn hàng nháp từ Backend
   const fetchDrafts = async () => {
     try {
-      const res = await api.get("/ai-draft-orders");
-      // Chỉ hiển thị các đơn đang chờ (Pending)
-      const pendingDrafts = res.data.filter((d: AIDraft) => d.confirmation_status === "Pending");
-      setDrafts(pendingDrafts);
+      // Sửa URL cho khớp với Backend
+      const res = await api.get("/ai_draft_order/"); 
+      setDrafts(res.data);
     } catch (error) {
       console.error("Lỗi lấy dữ liệu:", error);
     } finally {
@@ -39,79 +37,63 @@ export default function AIDraftsPage() {
     fetchDrafts();
   }, []);
 
-  // 2. Xác nhận đơn hàng (Chuyển nháp thành thật)
   const handleConfirm = async (id: number) => {
-    if (!confirm("Bạn có chắc chắn muốn xác nhận đơn hàng này không? Hệ thống sẽ tự động tạo hóa đơn và hạch toán công nợ.")) return;
-
     try {
-      await api.post(`/ai-draft-orders/${id}/confirm`);
-      alert("Xác nhận thành công! Đơn hàng đã được chuyển vào hệ thống quản lý.");
-      setDrafts(drafts.filter((d) => d.draft_id !== id));
-    } catch (error) {
-      alert("Lỗi khi xác nhận đơn hàng. Vui lòng kiểm tra lại thông tin sản phẩm/khách hàng.");
+      await api.post(`/ai_draft_order/${id}/confirm`);
+      alert("Xác nhận đơn hàng thành công! Đã trừ kho và ghi nợ.");
+      fetchDrafts(); 
+    } catch (err: any) {
+      alert("Lỗi: " + (err.response?.data?.error || "Không xác định"));
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Đang tải đơn hàng từ AI...</div>;
+  if (loading) return <div className="p-8 text-center">Đang tải dữ liệu AI...</div>;
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center gap-3">
-        <Bot className="h-8 w-8 text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Đơn hàng nháp từ AI</h1>
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Bot className="text-blue-600" /> Đơn hàng AI nháp
+          </h1>
+          <p className="text-gray-500">Xem và xác nhận các đơn hàng được trích xuất từ giọng nói</p>
+        </div>
+        
+        {/* Nút Micro (Thành viên Người 6 sẽ viết logic ghi âm ở đây) */}
+        <button className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-full hover:bg-red-700 transition-all shadow-lg animate-pulse">
+          <Mic size={20} /> Bấm để nói
+        </button>
       </div>
 
       {drafts.length === 0 ? (
-        <div className="bg-gray-50 border-2 border-dashed rounded-xl p-12 text-center text-gray-500">
-          Hiện không có lệnh thoại nào cần xử lý.
+        <div className="bg-blue-50 border-2 border-dashed border-blue-200 rounded-xl p-12 text-center">
+          <p className="text-blue-600 font-medium">Hiện không có lệnh thoại nào cần xử lý.</p>
         </div>
       ) : (
-        <div className="grid gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {drafts.map((draft) => {
-            // Giải mã JSON từ AI để hiển thị chi tiết
-            const details = JSON.parse(draft.extracted_json || "{}");
+            // Giải mã JSON từ Backend
+            const details = JSON.parse(draft.extracted_json);
             
             return (
-              <div key={draft.draft_id} className="bg-white border rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-4 bg-blue-50 border-b flex justify-between items-center">
-                  <div className="flex items-center gap-2 text-blue-700">
-                    <Bot className="h-4 w-4" />
-                    <span className="text-sm font-medium italic">"{draft.recognized_content}"</span>
+              <div key={draft.draft_id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                <div className="p-5 flex-1">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 mb-3 bg-blue-50 w-fit px-2 py-1 rounded">
+                    <User size={14} /> {details.customer_name || "Khách vãng lai"}
                   </div>
-                  <span className="text-xs text-gray-400">{new Date(draft.created_at).toLocaleString('vi-VN')}</span>
-                </div>
-
-                <div className="p-6 grid md:grid-cols-3 gap-4">
-                  {/* Thông tin khách */}
-                  <div className="flex items-start gap-3">
-                    <User className="h-5 w-5 text-gray-400 mt-1" />
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase font-bold">Khách hàng</p>
-                      <p className="font-semibold text-gray-900">{details.customer_name || "Chưa rõ"}</p>
-                    </div>
-                  </div>
-
-                  {/* Thanh toán */}
-                  <div className="flex items-start gap-3">
-                    <CreditCard className="h-5 w-5 text-gray-400 mt-1" />
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase font-bold">Thanh toán</p>
-                      <span className={`text-sm px-2 py-0.5 rounded-full font-medium ${details.payment_method === 'Debt' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                        {details.payment_method === 'Debt' ? 'Ghi nợ' : 'Tiền mặt'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Sản phẩm */}
-                  <div className="flex items-start gap-3 md:col-span-1 border-l pl-4">
-                    <Package className="h-5 w-5 text-gray-400 mt-1" />
-                    <div className="w-full">
-                      <p className="text-xs text-gray-500 uppercase font-bold underline mb-1">Sản phẩm trích xuất</p>
-                      <ul className="space-y-1">
+                  
+                  <p className="text-gray-800 font-medium italic mb-4">"{draft.recognized_content}"</p>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-[10px] text-gray-400 uppercase font-bold mb-2">Sản phẩm trích xuất</p>
+                      <ul className="space-y-2">
                         {details.items?.map((item: AIDraftItem, idx: number) => (
-                          <li key={idx} className="text-sm flex justify-between border-b border-gray-50 pb-1">
-                            <span className="text-gray-700">{item.product_name}</span>
-                            <span className="font-bold text-blue-600">x{item.quantity}</span>
+                          <li key={idx} className="flex justify-between text-sm">
+                            <span className="text-gray-600 flex items-center gap-2">
+                              <Package size={14} className="text-gray-400" /> {item.product_name}
+                            </span>
+                            <span className="font-bold">x{item.quantity}</span>
                           </li>
                         ))}
                       </ul>
@@ -119,15 +101,13 @@ export default function AIDraftsPage() {
                   </div>
                 </div>
 
-                <div className="px-6 py-4 bg-gray-50 border-t flex justify-end gap-3">
-                  <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-red-600 flex items-center gap-2">
-                    <X className="h-4 w-4" /> Bỏ qua
-                  </button>
+                <div className="p-4 bg-gray-50 border-t flex justify-end gap-2">
+                  <button className="text-sm px-3 py-1.5 text-gray-500 hover:text-red-600 font-medium">Bỏ qua</button>
                   <button 
                     onClick={() => handleConfirm(draft.draft_id)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 flex items-center gap-2 shadow-sm"
+                    className="bg-blue-600 text-white text-sm px-4 py-1.5 rounded-lg font-bold hover:bg-blue-700 flex items-center gap-2"
                   >
-                    <Check className="h-4 w-4" /> Xác nhận & Tạo đơn
+                    <Check size={16} /> Xác nhận tạo đơn
                   </button>
                 </div>
               </div>
