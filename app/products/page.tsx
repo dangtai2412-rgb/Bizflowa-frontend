@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
-
+import api from "@/lib/axios";
+import { Plus, Trash2, Edit } from "lucide-react";
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -19,7 +20,7 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     try {
       // Giả sử API chạy ở localhost:5000
-      const res = await fetch('http://localhost:5000/product', {
+      const res = await fetch('http://localhost:3000/product', {
         headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } 
       });
       if (res.ok) {
@@ -35,7 +36,7 @@ export default function ProductsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:5000/product', {
+      const res = await fetch('http://localhost:3000/product', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
