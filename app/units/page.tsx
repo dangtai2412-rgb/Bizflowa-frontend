@@ -1,73 +1,136 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import api from "@/lib/axios";
-import { Plus, Trash2, Edit } from "lucide-react";
-
-interface Unit {
-  id: number;
-  name: string;
-}
+import { useState, useEffect } from 'react';
 
 export default function UnitsPage() {
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [units, setUnits] = useState([]);
+  const [newUnit, setNewUnit] = useState({ unit_name: '', conversion_rate: 1 });
 
+  // 1. Tải danh sách sản phẩm để chọn trước khi thêm đơn vị
   useEffect(() => {
-    // Giả lập gọi API lấy đơn vị tính
-    const fetchUnits = async () => {
-      try {
-        // const res = await api.get("/units"); 
-        // setUnits(res.data);
-        
-        // Dữ liệu giả để test trước khi có Backend
-        setUnits([
-          { id: 1, name: "Cái" },
-          { id: 2, name: "Hộp" },
-          { id: 3, name: "Thùng" },
-          { id: 4, name: "Kg" },
-        ]);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUnits();
+    fetch('http://localhost:5000/product', {
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    })
+    .then(res => res.json())
+    .then(data => setProducts(data));
   }, []);
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Đơn vị tính</h1>
-        <button className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-          <Plus className="h-4 w-4" /> Thêm mới
-        </button>
-      </div>
+  // 2. Khi chọn sản phẩm -> Tải danh sách đơn vị của nó
+  useEffect(() => {
+    if (selectedProduct) {
+        fetch(`http://localhost:5000/unit/product/${selectedProduct}`, {
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        })
+        .then(res => res.json())
+        .then(data => setUnits(data));
+    }
+  }, [selectedProduct]);
 
-      <div className="rounded-xl border bg-white shadow-sm">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-50 text-gray-500">
-            <tr>
-              <th className="px-6 py-3">ID</th>
-              <th className="px-6 py-3 w-full">Tên đơn vị</th>
-              <th className="px-6 py-3 text-right">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {units.map((unit) => (
-              <tr key={unit.id} className="hover:bg-gray-50">
-                <td className="px-6 py-3 text-gray-500">#{unit.id}</td>
-                <td className="px-6 py-3 font-medium">{unit.name}</td>
-                <td className="px-6 py-3 text-right space-x-2">
-                  <button className="text-blue-600"><Edit className="h-4 w-4" /></button>
-                  <button className="text-red-600"><Trash2 className="h-4 w-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+  const handleAddUnit = async () => {
+    if (!selectedProduct) return alert("Vui lòng chọn sản phẩm trước!");
+    
+    // Logic quy đổi: Nếu tỷ lệ = 1 thì là đơn vị cơ bản (Base), >1 là quy đổi
+    const isBase = newUnit.conversion_rate === 1;
+    
+    const res = await fetch('http://localhost:5000/unit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({
+            product_id: selectedProduct,
+            unit_name: newUnit.unit_name,
+            conversion_rate: newUnit.conversion_rate,
+            is_base_unit: isBase
+        })
+    });
+
+    if (res.ok) {
+        // Reload units
+        const updatedUnits = await fetch(`http://localhost:5000/unit/product/${selectedProduct}`, {
+             headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        }).then(r => r.json());
+        setUnits(updatedUnits);
+        setNewUnit({ unit_name: '', conversion_rate: 1 });
+    }
+  };
+
+  return (
+    <div className="p-6">
+       <h1 className="text-2xl font-bold mb-6">Cài đặt Đơn vị tính</h1>
+
+       <div className="flex gap-6">
+           {/* Cột trái: Chọn sản phẩm */}
+           <div className="w-1/3 border-r pr-6">
+               <h3 className="font-semibold mb-3">Chọn sản phẩm</h3>
+               <select 
+                className="w-full p-2 border rounded"
+                onChange={(e) => setSelectedProduct(e.target.value)}
+               >
+                   <option value="">-- Chọn sản phẩm --</option>
+                   {products.map((p: any) => (
+                       <option key={p.id} value={p.id}>{p.name}</option>
+                   ))}
+               </select>
+           </div>
+
+           {/* Cột phải: Danh sách đơn vị & Form thêm */}
+           <div className="w-2/3">
+               {selectedProduct ? (
+                   <>
+                       <div className="mb-6 bg-blue-50 p-4 rounded">
+                           <h4 className="font-bold mb-2 text-blue-800">Thêm đơn vị quy đổi</h4>
+                           <div className="flex gap-2 items-end">
+                                <div>
+                                    <label className="text-xs">Tên ĐV (VD: Thùng)</label>
+                                    <input 
+                                        className="border p-2 rounded w-full"
+                                        value={newUnit.unit_name}
+                                        onChange={e => setNewUnit({...newUnit, unit_name: e.target.value})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs">Quy đổi (VD: 24)</label>
+                                    <input 
+                                        type="number"
+                                        className="border p-2 rounded w-24"
+                                        value={newUnit.conversion_rate}
+                                        onChange={e => setNewUnit({...newUnit, conversion_rate: Number(e.target.value)})}
+                                    />
+                                </div>
+                                <button onClick={handleAddUnit} className="bg-blue-600 text-white px-4 py-2 rounded">Lưu</button>
+                           </div>
+                           <p className="text-xs text-gray-500 mt-2">* Nhập 1 nếu là đơn vị cơ bản (Lon, Cái). Nhập số lớn hơn 1 nếu là đơn vị lớn (Thùng, Hộp).</p>
+                       </div>
+
+                       <table className="min-w-full border">
+                           <thead className="bg-gray-100">
+                               <tr>
+                                   <th className="p-2 text-left">Tên đơn vị</th>
+                                   <th className="p-2 text-left">Tỷ lệ quy đổi</th>
+                                   <th className="p-2 text-left">Hành động</th>
+                               </tr>
+                           </thead>
+                           <tbody>
+                               {units.map((u: any) => (
+                                   <tr key={u.id} className="border-t">
+                                       <td className="p-2">{u.name}</td>
+                                       <td className="p-2">{u.conversion_rate || 1}</td>
+                                       <td className="p-2">
+                                           <button className="text-red-500 text-sm">Xóa</button>
+                                       </td>
+                                   </tr>
+                               ))}
+                           </tbody>
+                       </table>
+                   </>
+               ) : (
+                   <div className="text-gray-400 italic">Vui lòng chọn một sản phẩm bên trái để cài đặt đơn vị.</div>
+               )}
+           </div>
+       </div>
     </div>
   );
 }
