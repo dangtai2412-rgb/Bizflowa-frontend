@@ -1,29 +1,37 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, MoreHorizontal } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, MoreHorizontal, Loader2 } from 'lucide-react';
+import api from '@/lib/axios'; // <--- 1. Import axios thần thánh
 
-// Định nghĩa kiểu dữ liệu dựa trên backend (src/api/schemas/unit.py)
 interface Unit {
-  id: string;
+  id: number; // Backend thường trả về number, check lại nếu là string
   name: string;
   description?: string;
 }
 
 export default function UnitsPage() {
   const [units, setUnits] = useState<Unit[]>([]);
+  const [loading, setLoading] = useState(true); // <--- 2. Thêm state loading
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Giả lập fetch dữ liệu từ API: GET /api/units
+  // Hàm gọi API thật
+  const fetchUnits = async () => {
+    try {
+      setLoading(true);
+      // Gọi xuống Backend (Route này phải khớp với file unit_controller.py)
+      const response = await api.get('/units'); 
+      setUnits(response.data);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách đơn vị:", error);
+      // Có thể thêm toast thông báo lỗi ở đây
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Trong thực tế, bạn sẽ gọi: fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`)
-    const mockData: Unit[] = [
-      { id: '1', name: 'Cái', description: 'Đơn vị đếm cơ bản' },
-      { id: '2', name: 'Thùng', description: 'Quy cách đóng gói thùng' },
-      { id: '3', name: 'Hộp', description: 'Quy cách đóng gói hộp' },
-      { id: '4', name: 'Kg', description: 'Đơn vị khối lượng' },
-    ];
-    setUnits(mockData);
+    fetchUnits(); // <--- 3. Gọi hàm khi trang vừa load
   }, []);
 
   return (
@@ -37,7 +45,7 @@ export default function UnitsPage() {
         </button>
       </div>
 
-      {/* Filter & Search Section */}
+      {/* Filter & Search */}
       <div className="bg-white p-4 rounded-t-xl border-x border-t flex flex-wrap gap-4 items-center justify-between">
         <div className="relative w-full max-w-md">
           <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
@@ -68,20 +76,39 @@ export default function UnitsPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {units.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase())).map((unit) => (
-              <tr key={unit.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{unit.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{unit.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{unit.description || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex justify-end gap-3">
-                    <button className="text-blue-600 hover:text-blue-900"><Edit size={18} /></button>
-                    <button className="text-red-600 hover:text-red-900"><Trash2 size={18} /></button>
-                    <button className="text-gray-400 hover:text-gray-600"><MoreHorizontal size={18} /></button>
+            {/* Xử lý trường hợp Loading và Dữ liệu trống */}
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                  <div className="flex justify-center items-center gap-2">
+                    <Loader2 className="animate-spin" /> Đang tải dữ liệu...
                   </div>
                 </td>
               </tr>
-            ))}
+            ) : units.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                  Chưa có dữ liệu đơn vị tính nào.
+                </td>
+              </tr>
+            ) : (
+              // Render dữ liệu thật
+              units
+                .filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                .map((unit) => (
+                  <tr key={unit.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{unit.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{unit.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{unit.description || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end gap-3">
+                        <button className="text-blue-600 hover:text-blue-900"><Edit size={18} /></button>
+                        <button className="text-red-600 hover:text-red-900"><Trash2 size={18} /></button>
+                      </div>
+                    </td>
+                  </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
