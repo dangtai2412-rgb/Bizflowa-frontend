@@ -154,7 +154,7 @@ export default function Dashboard() {
                   tickFormatter={(value) => `${value / 1000}k`} 
                 />
                 <Tooltip 
-                  formatter={(value: number) => [`${value.toLocaleString()} ₫`, 'Doanh thu']}
+                  formatter={(value: any) => [`${Number(value).toLocaleString()} ₫`, 'Doanh thu']}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                 />
                 <Bar dataKey="revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={40} />
