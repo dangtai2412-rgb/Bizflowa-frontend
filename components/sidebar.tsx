@@ -15,7 +15,7 @@ import {
   Ruler    // Icon Đơn vị (Nếu cần)
 } from "lucide-react";
 import clsx from "clsx";
-
+import { ClipboardCheck } from "lucide-react";
 const menuItems = [
   { name: "Tổng quan", href: "/", icon: LayoutDashboard },
   { name: "Bán hàng (POS)", href: "/pos_order_module", icon: ShoppingCart }, // Đổi tên cho đúng chức năng
@@ -26,6 +26,9 @@ const menuItems = [
   { name: "Khách hàng", href: "/customers", icon: Users },
   { name: "Nhà cung cấp", href: "/supplier", icon: Truck }, // Lưu ý: folder của bạn là 'supplier' (số ít)
   { name: "Đơn hàng AI", href: "/ai_drafts", icon: Bot },
+  { name: 'Kiểm kho', href: '/inventory-check', icon: ClipboardCheck },
+  { name: 'Sổ quỹ (Chi phí)', href: '/expenses', icon: Wallet },
+  
 ];
 
 export default function Sidebar() {
