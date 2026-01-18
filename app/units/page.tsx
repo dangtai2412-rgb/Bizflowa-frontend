@@ -87,7 +87,4 @@ export default function UnitsPage() {
       </div>
     </div>
   );
-
-
-  
 }
