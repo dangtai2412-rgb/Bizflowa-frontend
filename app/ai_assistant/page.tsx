@@ -122,4 +122,7 @@ export default function AIChatBox() {
       </button>
     </div>
   );
+
+
+
 }
